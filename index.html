@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1CQ4D3VQ3L"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-1CQ4D3VQ3L');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO & Metadata -->
+    <title>Retro Render</title>
+    <meta name="description" content="Transform videos and webcam feeds into real-time ASCII art, emoji streams, and retro-style pixel animations instantly. A browser-based video effects engine featuring customizable character sets and recording tools.">
+    <meta name="keywords" content="retro render, ascii art generator, emoji video converter, webcam ascii, pixel art video, chris pirillo, real-time video effects, javascript ascii renderer, webgl alternative, browser video processing">
+    <meta name="author" content="Chris Pirillo">
+    <link rel="canonical" href="https://pirillo.com/arcade/retro-render.html">
+    
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pirillo.com/arcade/retro-render.html">
+    <meta property="og:title" content="Retro Render | Real-time ASCII & Emoji Video Art">
+    <meta property="og:description" content="Convert video and webcam feeds into retro ASCII and emoji art in real-time. Created by Chris Pirillo.">
+    <meta property="og:image" content="https://pirillo.com/arcade/images/retro-render.png">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@ChrisPirillo">
+    <meta name="twitter:creator" content="@ChrisPirillo">
+    <meta name="twitter:title" content="Retro Render">
+    <meta name="twitter:description" content="Real-time browser-based ASCII and emoji video renderer. No plugins required.">
+    <meta name="twitter:image" content="https://pirillo.com/arcade/images/retro-render.png">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Retro Render",
+      "url": "https://pirillo.com/arcade/retro-render.html",
+      "image": "https://pirillo.com/arcade/images/retro-render.png",
+      "author": {
+        "@type": "Person",
+        "name": "Chris Pirillo",
+        "url": "https://pirillo.com"
+      },
+      "description": "A browser-based tool to render video and webcam feeds as real-time ASCII or Emoji art.",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+    
+    <!-- Resource Hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-color: #e5e5e5;
+            --accent-color: #3b82f6;
+            --panel-bg: rgba(10, 10, 10, 0.95);
+            --border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            height: 100vh;
+            width: 100vw;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+
+        #mainCanvas {
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border-left: 1px solid var(--border-color);
+            box-shadow: -10px 0 40px rgba(0,0,0,0.8);
+        }
+
+        .control-section {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .control-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+        .section-title {
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: #71717a;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+            opacity: 0.5;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            outline: none;
+            margin: 0.5rem 0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: var(--accent-color);
+        }
+
+        .toggle-checkbox:checked { right: 0; border-color: #10b981; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1em;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .action-btn:hover:not(:disabled) { transform: translateY(-1px); }
+        .action-btn:active:not(:disabled) { transform: translateY(0); }
+
+        /* Grey-out state for disabled buttons */
+        .action-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            filter: grayscale(1);
+            pointer-events: none;
+        }
+        
+        .btn-primary { background: rgba(59, 130, 246, 0.1); color: #60a5fa; border-color: rgba(59, 130, 246, 0.2); }
+        .btn-primary:hover { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); }
+
+        .btn-secondary { background: rgba(255, 255, 255, 0.03); color: #a1a1aa; }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+
+        .btn-danger { background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        
+        .btn-success { background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.2); }
+        .btn-success:hover { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+
+    </style>
+</head>
+<body class="relative">
+
+    <input type="file" id="videoUpload" accept="video/*" class="hidden" aria-hidden="true">
+
+    <canvas id="mainCanvas" class="block object-contain cursor-move" role="img" aria-label="Real-time ASCII rendering output"></canvas>
+
+    <div id="recIndicator" class="hidden absolute top-6 left-1/2 transform -translate-x-1/2 z-40 flex items-center gap-2 bg-red-950/80 border border-red-500/30 px-4 py-2 rounded-full backdrop-blur-md pointer-events-none shadow-xl" role="status" aria-live="polite">
+        <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
+        <span class="text-red-200 font-mono text-[10px] font-bold tracking-widest">RECORDING</span>
+    </div>
+
+    <div id="procIndicator" class="hidden absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-3 bg-black/80 px-8 py-6 rounded-xl backdrop-blur-xl border border-white/10" role="status" aria-live="polite">
+        <i class="fa-solid fa-circle-notch animate-spin text-2xl text-blue-500"></i>
+        <span class="text-white font-mono text-xs font-bold tracking-widest uppercase" id="procText">Processing</span>
+    </div>
+
+    <nav class="absolute top-6 right-6 z-40">
+        <button id="menuBtn" class="w-10 h-10 rounded-full bg-black/60 hover:bg-white/10 backdrop-blur text-white flex items-center justify-center transition-all duration-200 border border-white/10 shadow-2xl group" aria-label="Open Settings">
+            <i class="fa-solid fa-sliders text-sm group-hover:rotate-180 transition-transform duration-500"></i>
+        </button>
+    </nav>
+
+    <aside id="settingsPanel" class="fixed top-0 right-0 h-full w-80 md:w-96 glass-panel transform translate-x-full transition-transform duration-300 z-50 flex flex-col shadow-2xl" aria-label="Settings Panel">
+        
+        <header class="flex items-center justify-between px-6 py-5 border-b border-white/5 shrink-0">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-wave-square text-blue-500 text-xs" aria-hidden="true"></i>
+                <h2 class="text-xs font-bold tracking-[0.2em] uppercase text-white">Retro Render</h2>
+            </div>
+            <button id="closeBtn" class="text-zinc-500 hover:text-white transition-colors" aria-label="Close Settings">
+                <i class="fa-solid fa-xmark text-sm" aria-hidden="true"></i>
+            </button>
+        </header>
+
+        <div class="overflow-y-auto flex-1 p-6 custom-scrollbar">
+            
+            <div class="space-y-6 mb-6">
+                
+                <section>
+                    <div class="section-title">Input Source</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btnUpload" class="action-btn btn-secondary">
+                            <i class="fa-solid fa-folder-open" aria-hidden="true"></i>Video File
+                        </button>
+                        <button id="btnWebcam" class="action-btn btn-secondary">
+                            <i class="fa-solid fa-video" aria-hidden="true"></i> Webcam
+                        </button>
+                    </div>
+                </section>
+                
+                <section>
+                    <div class="section-title">Simulation</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btnRandom" class="action-btn btn-primary">
+                            <i class="fa-solid fa-dice" aria-hidden="true"></i> Random
+                        </button>
+                        <button id="btnReset" class="action-btn btn-secondary">
+                            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reset
+                        </button>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="section-title">Export</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btnExportImg" class="action-btn btn-success">
+                            <i class="fa-solid fa-camera" aria-hidden="true"></i> Snap
+                        </button>
+                        <!-- Record button starts disabled -->
+                        <button id="btnRecord" class="action-btn btn-danger" disabled>
+                            <i class="fa-solid fa-circle" aria-hidden="true"></i> Rec
+                        </button>
+                    </div>
+                </section>
+                
+                <div class="h-px bg-white/10 w-full mt-4" role="separator"></div>
+            </div>
+
+            <div id="controlsContainer"></div>
+
+        </div>
+    </aside>
+
+    <video id="sourceVideo" class="hidden" loop playsinline crossorigin="anonymous"></video>
+
+    <script>
+        /**
+         * Retro Render v1.1
+         */
+
+        const RAW_EMOJI_BASE = ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','🫠','😉','😊','😇','🥰','😍','🤩','😘','😗','☺️','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🫢','🫣','🤫','🤔','🫡','🤐','🤨','😐','😑','😶','🫥','😏','😒','🙄','😬','😮‍💨','🤥','🫨','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','😵‍💫','🤯','🤠','🥳','🥸','😎','🤓','🧐','😕','🫤','😟','🙁','☹️','😮','😯','😲','😳','🥺','🥹','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖','😺','😸','😹','😻','😼','😽','🙀','😿','😾','💋','💌','💘','💝','💖','💗','💓','💞','💕','💟','❣️','💔','❤️','🧡','💛','💚','💙','💜','🤎','🖤','🤍','💯','💢','💥','💫','💦','💨','🕳️','💣','💬','👁️‍🗨️','🗨️','🗯️','💭','💤','🐵','🐒','🦍','🦧','🐶','🐕','🦮','🐕‍🦺','🐩','🐺','🦊','🦝','🐱','🐈','🐈‍⬛','🦁','🐯','🐅','🐆','🐴','🐎','🦄','🦓','🦌','🦬','🐮','🐂','🐄','🐷','🐖','🐗','🐽','🐏','🐑','🐐','🐪','🐫','🦙','🦒','🐘','🦣','🦏','🦛','🐭','🐁','🐀','🐹','🐰','🐇','🐿️','🦫','🦔','🦇','🐻','🐻‍❄️','🐨','🐼','🦥','🦦','🦨','🦘','🦡','🐾','🦃','🐔','🐓','🐣','🐤','🐥','🐦','🐧','🕊️','🦅','🦆','🦢','🦉','🦤','🪶','🦩','🦚','🦜','🐸','🐊','🐢','🦎','🐍','🐲','🐉','🦕','🦖','🐳','🐋','🐬','🦭','🐟','🐠','🐡','🦈','🐙','🐚','🪸','🐌','🦋','🐛','🐜','🐝','🪲','🐞','🦗','🪳','🕷️','🕸️','🦂','🦟','🪰','🪱','🦠','💐','🌸','💮','🏵️','🌹','🥀','🌺','🌻','🌼','🌷','🌱','🪴','🌲','🌳','🌴','🌵','🌾','🌿','☘️','🍀','🍁','🍂','🍃','🪹','🪺','🍇','🍈','🍉','🍊','🍋','🍌','🍍','🥭','🍎','🍏','🍐','🍑','🍒','🍓','🫐','🥝','🍅','🫒','🥥','🥑','🍆','🥔','🥕','🌽','🌶️','🫑','🥒','🥬','🥦','🧄','🧅','🍄','🥜','🫘','🌰','🍞','🥐','🥖','🫓','🥨','🥯','🥞',' waffle','🧀','🍖','🍗','🥩','🥓','🍔','🍟','🍕','🌭','🥪','🌮','🌯','🫔','🥙','🧆','🥚','🍳','🥘','🍲','🫕','🥣','🥗','🍿','バター','🧂','🥫','🍱','🍘','🍙','🍚','🍛','🍜','🍝','🍠','🍢','🍣','🍤','🍥','🥮','🍡',' dumpling','🥠','🥡','🦀','🦞','🦐','🦑','🦪','🍦','🍧','🍨','🍩','🍪','🎂','🍰','🧁','🥧','🍫','🍬','🍭','🍮','🍯','ボトル','ミルク','コーヒー','🫖','ティー','日本酒','シャンパン','ワイン','マクティーニ','カクテル','ビール','乾杯','🥃','🥤','🧋','ジュース','🧉','氷','箸','🍽️','🍴','スプーン','🌍','🌎','🌏','🌐','地図','日本地図','コンパス','山','丘','火山','富士山','キャンプ','ビーチ','砂漠','島','公園','スタジアム','建物','建設','レンガ','岩','木','小屋','住宅街','廃墟','家','庭','ビル','郵便局','ポスト','病院','銀行','ホテル','モーテル','コンビニ','学校','デパート','工場','お城','西洋の城','結婚式','東京タワー','自由の女神','教会','モスク','ヒンドゥー寺院','シナゴーグ','鳥居','カアバ','噴水','テント','霧','夜景','都会','朝焼け','日の出','夕焼け','日没','ブリッジ','温泉','メリーゴーランド','観覧車','ローラーコースター','理容店','サーカス','汽車','電車','新幹線','のぞみ','鉄道','地下鉄','ライトレール','駅','路面電車','モノレール','登山鉄道','都電','バス','停留所','トロリーバス','ワゴン車','救急車','消防車','パトカー','パトランプ','タクシー','黒タクシー','乗用車','新型車','SUV','ピックアップ','トラック','大型トラック','トラクター','レーシングカー','バイク','スクーター','車椅子','電動車椅子','三輪車','自転車','キックボード','スケボー','ローラースケート','バス停','高速道路','線路','ドラム缶','ガソリン','警告','信号','歩行者信号','止まれ','工事','錨','帆船','カヌー','ボート','客船','フェリー','ヨット','船','飛行機','小型機','離陸','着陸','パラシュート','座席','ヘリ','モノレール','ロープウェイ','ゴンドラ','人工衛星','ロケット','UFO','ベル','スーツケース','砂時計','砂時計','時計','アラーム','ストップウォッチ','タイマー','置時計','12時','12時半','1時','1時半','2時','2時半','3時','3時半','4時','4時半','5時','5時半','6時','6時半','7時','7時半','8時','8時半','9時','9時半','10時','10時半','11時','11時半','新月','三日月','上弦の月','満月前','満月','満月後','下弦の月','残月','三日月','新月顔','上弦の月顔','下弦の月顔','温度計','太陽','満月顔','太陽顔','土星','星','輝く星','流れ星','銀河','雲','晴れ時々曇り','雷雨','晴れ','曇り','にわか雨','雨','雪','稲妻','竜巻','霧','風','渦巻き','虹','閉じ傘','傘','傘雨','パラソル','雷','雪の結晶','雪だるま','雪だるま顔','彗星','火','水滴','波','かぼちゃ','ツリー','花火','線香花火','爆竹','キラキラ','風船','クラッカー','くす玉','笹','門松','ひな人形','こいのぼり','風鈴','お月見','お年玉','リボン','ギフト','リボン','チケット','入場券','勲章','トロフィー','メダル','金メダル','銀メダル','銅メダル','サッカー','野球','ソフトボール','バスケ','バレー','アメフト','ラグビー','テニス','フリスビー','ボウリング','クリケット','フィールドホッケー','アイスホッケー','ラクロス','卓球','バドミントン','ボクシング','空手','ゴール','ゴルフ','スケート','釣り','ダイビング','シャツ','スキー','そり','カーリング','的','ヨーヨー','凧','ビリヤード','水晶','魔法の杖','お守り','ゲーム機','ジョイスティック','スロット','ダイス','パズル','クマ','ピニャータ','ミラーボール','マトリョーシカ','スペード','ハート','ダイヤ','クラブ','チェス','ジョーカー','麻雀','花札','仮面','絵画','パレット','糸','針','毛糸','結び目','眼鏡','サングラス','ゴーグル','白衣','安全ベスト','ネクタイ','Tシャツ','ジーンズ','スカーフ','手袋','コート','靴下','ドレス','着物','サリ','水着','ブリーフ','ショーツ','ビキニ','ブラウス','財布','バッグ','ポーチ','買い物袋','リュック','サンダル','革靴','スニーカー','ブーツ','フラットシューズ','ヒール','サンダル','バレエシューズ','ブーツ','冠','帽子','シルクハット','卒業帽','キャップ','ヘルメット','救急ヘルメット','数珠','口紅','指輪','宝石','消音','小音','中音','大音','メガホン','応援','ホルン','ベル','静音','楽譜','音符','連符','マイク','ミキサー','コントローラー','カラオケ','ヘッドホン','ラジオ','サックス','アコーディオン','ギター','ピアノ','トランペット','バイオリン','バンジョー','ドラム','太鼓','スマホ','スマホ矢印','電話','受話器','ポケベル','FAX','電池','コンセント','PC','モニター','プリンター','キーボード','マウス','トラックボール','磁気ディスク','フロッピー','CD','DVD','そろばん','映写機','フィルム','プロジェクター','カチンコ','テレビ','カメラ','フラッシュ','ビデオカメラ','ビデオ','虫眼鏡','虫眼鏡右','ろうそく','電球','懐中電灯','提灯','オイルランプ','手帳','本','辞書','緑の本','青の本','オレンジの本','本棚','ノート','帳簿','ページ','スクロール','書類','新聞','新聞束','しおり','しおり','ラベル','お金','コイン','円','ドル','ユーロ','ポンド','飛ぶお金','カード','領収書','封筒','メール','メール着信','メール送信','アウトボックス','インボックス','段ボール','郵便受け','郵便受け閉','郵便受け開','郵便受け空','ポスト','投票箱','鉛筆','万年筆','万年筆','ペン','筆','クレヨン','メモ','カバン','フォルダ','開いたフォルダ','整理フォルダ','カレンダー','カレンダー','メモ帳','カレンダー','名刺入れ','上昇','下降','グラフ','クリップボード','画鋲','ピン','クリップ','連結クリップ','定規','三角定規','ハサミ','整理箱','ファイル','ゴミ箱','鍵閉','鍵開','ペン鍵','鍵','鍵','古鍵','金槌','斧','つるはし','金槌釘','工具','短剣','剣','銃','ブーメラン','弓矢','盾','ノコギリ','レンチ','ドライバー','ネジ','歯車','万力','天秤','杖','リンク','鎖','フック','工具箱','磁石','はしご','フラスコ','試験管','シャーレ','DNA','顕微鏡','望遠鏡','アンテナ','注射','血液','カプセル','絆創膏','聴診器','X線','ドア','エレベーター','鏡','窓','ベッド','ソファ','椅子','トイレ','ラバーカップ','シャワー','風呂','ネズミ捕り','カミソリ','ローション','安全ピン','ほうき','カゴ','トイレットペーパー','バケツ','石鹸','泡','歯ブラシ','スポンジ','消火器','カート','タバコ','棺','墓石','骨壺','モアイ','看板','IDカード','ATM','ゴミ捨て','水飲み場','車椅子','男子','女子','トイレ','赤ちゃん','トイレサイン','入国審査','税関','手荷物受取','手荷物預かり','警告','子供','進入禁止','禁止','自転車禁止','禁煙','ポイ捨て禁止','飲用不可','歩行禁止','スマホ禁止','18禁','放射能','バイオハザード','上','右上','右','右下','下','左下','左','左上','上下','左右','戻る','進む','曲がる上','曲がる下','回転','リサイクル','戻る','終了','オン','すぐに','トップ','礼拝','原子','オーム','ダビデ','車輪','陰陽','十字架','正教','イスラム','平和','メノーラ','六芒星','牡羊','牡牛','双子','蟹','獅子','乙女','天秤','蠍','射手','山羊','水瓶','魚','蛇使い','シャッフル','リピート','リピート1','再生','早送り','次','再生一時停止','戻る','早戻し','前','上','上','下','下','一時停止','停止','録音','取り出し','映画館','低輝度','高輝度','アンテナ','振動','マナー','女性','男性','ジェンダー','バツ','プラス','マイナス','割る','無限','！！','！？','？','白はてな','白ビックリ','！','波','両替','ドル','蛇','リサイクル','フルール・ド・リス','三叉矛','名札','初心者','丸','チェック','チェック','チェック','バツ','バツ','輪','二重輪','山','アスタリスク','花','花','コピーライト','登録商標','トレードマーク','シャープ','アスタリスク','0','1','2','3','4','5','6','7','8','9','10','英大文字','英小文字','数字','記号','文字','A','AB','B','CL','COOL','FREE','INFO','ID','M','NEW','NG','O','OK','P','SOS','UP','VS','ココ','サ','月','有','指','得','割','無','禁','可','申','合','空','祝','秘','営','満','赤丸','橙丸','黄丸','緑丸','青丸','紫丸','茶丸','黒丸','白丸','赤四角','橙四角','黄四角','緑四角','青四角','紫四角','茶四角','黒四角','白四角','黒中','白中','黒小中','白小中','黒小','白小','橙菱形','青菱形','橙小菱形','青小菱形','赤三角上','赤三角下','菱形','ボタン','黒枠','白枠','ゴール','旗','日本旗','黒旗','白旗','虹旗','トランス旗','海賊旗','AC','AD','AE','AF','AG','AI','AL','AM','AO','AQ','AR','AS','AT','AU','AW','AX','AZ','BA','BB','BD','BE','BF','BG','BH','BI','BJ','BL','BM','BN','BO','BQ','BR','BS','BT','BV','BW','BY','BZ','CA','CC','CD','CF','CG','CH','CI','CK','CL','CM','CN','CO','CP','CR','CU','CV','CW','CX','CY','CZ','DE','DG','DJ','DK','DM','DO','DZ','EA','EC','EE','EG','EH','ER','ES','ET','EU','FI','FJ','FK','FM','FO','FR','GA','GD','GE','GF','GG','GH','GI','GL','GM','GN','GP','GQ','GR','GS','GT','GU','GW','GY','HK','HM','HN','HR','HT','HU','IC','ID','IE','IL','IM','IN','IO','IQ','IR','IS','IT','JE','JM','JO','JP','KE','KG','KH','KI','KM','KN','KP','KR','KW','KY','KZ','LA','LB','LC','LI','LK','LR','LS','LT','LU','LV','LY','MA','MC','MD','ME','MF','MG','MH','MK','ML','MM','MN','MO','MP','MQ','MR','MS','MT','MU','MV','MW','MX','MY','MZ','NA','NC','NE','NF','NG','NI','NL','NO','NP','NR','NU','NZ','OM','PA','PE','PF','PG','PH','PK','PL','PM','PN','PR','PS','PT','PW','PY','QA','RE','RO','RS','RU','RW','SA','SB','SC','SD','SE','SG','SH','SI','SJ','SK','SL','SM','SN','SO','SR','SS','ST','SV','SX','SY','SZ','TA','TC','TD','TF','TG','TH','TJ','TK','TL','TM','TN','TO','TR','TT','TV','TW','TZ','UA','UG','UM','UN','US','UY','UZ','VA','VC','VE','VG','VI','VN','VU','WF','WS','XK','YE','YT','ZA','ZM','ZW','EN','SC','WA'];
+
+        const SKINNABLE_BASES = ['👋','🤚','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦵','🦶','👂','🦻','👃','👶','👧','🧒','👦','👩','🧑','👨','👩‍🦱','🧑‍🦱','👨‍🦱','👩‍🦰','🧑‍🦰','👨‍🦰','👩‍🦳','🧑‍🦳','👨‍🦳','👩‍🦲','🧑‍🦲','👨‍🦲','👱‍♀️','👱','👱‍♂️','👵','🧓','👴','👲','👳‍♀️','👳','👳‍♂️','🧕','👮‍♀️','👮','👮‍♂️','👷‍♀️','👷','👷‍♂️','💂‍♀️','💂','💂‍♂️','🕵️‍♀️','🕵️','🕵️‍♂️','👩‍⚕️','🧑‍⚕️','👨‍⚕️','👩‍🌾','🧑‍🌾','👨‍🌾','👩‍🍳','🧑‍🍳','👨‍🍳','👩‍🎓','🧑‍🎓','👨‍🎓','👩‍🎤','🧑‍🎤','👨‍🎤','👩‍🏫','🧑‍🏫','👨‍🏫','👩‍🏭','🧑‍🏭','👨‍🏭','👩‍💻','🧑‍💻','👨‍💻','👩‍💼','🧑‍💼','👨‍💼','👩‍🔧','🧑‍🔧','👨‍🔧','👩‍🔬','🧑‍🔬','👨‍🔬','👩‍🎨','🧑‍🎨','👨‍🎨','👩‍🚒','🧑‍🚒','👨‍🚒','👩‍✈️','🧑‍✈️','👨‍✈️','👩‍🚀','🧑‍🚀','👨‍🚀','👩‍⚖️','🧑‍⚖️','👨‍⚖️','👰‍♀️','👰','👰‍♂️','🤵‍♀️','🤵','🤵‍♂️','👸','🤴','🥷','🦸‍♀️','🦸','🦸‍♂️','🦹‍♀️','🦹','🦹‍♂️','🤶','🎅','🧙‍♀️','🧙','🧙‍♂️','🧝‍♀️','🧝','🧝‍♂️','🧛‍♀️','🧛','🧛‍♂️','🧜‍♀️','🧜','🧜‍♂️','🧚‍♀️','🧚','🧚‍♂️','👼','🤰','🤱','👩‍🍼','🧑‍🍼','👨‍🍼','🙇‍♀️','🙇','🙇‍♂️','💁‍♀️','💁','💁‍♂️','🙅‍♀️','🙅','🙅‍♂️','🙆‍♀️','🙆','🙆‍♂️','🙋‍♀️','🙋','🙋‍♂️','🧏‍♀️','🧏','🧏‍♂️','🤦‍♀️','🤦','🤦‍♂️','🤷‍♀️','🤷','🤷‍♂️','🙎‍♀️','🙎','🙎‍♂️','🙍‍♀️','🙍','🙍‍♂️','💇‍♀️','💇','💇‍♂️','💆‍♀️','💆','💆‍♂️','🧖‍♀️','🧖','🧖‍♂️','💃','🕺','🕴️','🧗‍♀️','🧗','🧗‍♂️','🤺','🏇','⛷️','🏂','🏌️‍♀️','🏌️','🏌️‍♂️','🏄‍♀️','🏄','🏄‍♂️','🚣‍♀️','🚣','🚣‍♂️','🏊‍♀️','🏊','🏊‍♂️','⛹️‍♀️','⛹️','⛹️‍♂️','🏋️‍♀️','🏋️','🏋️‍♂️','🚴‍♀️','🚴','🚴‍♂️','🚵‍♀️','🚵','🚵‍♂️','🤸‍♀️','🤸','🤸‍♂️','🤼‍♀️','🤼','🤼‍♂️','🤽‍♀️','🤽','🤽‍♂️','🤾‍♀️','🤾','🤾‍♂️','🤹‍♀️','🤹','🤹‍♂️','🧘‍♀️','🧘','🧘‍♂️','🛀','🛌'];
+        
+        const SKIN_TONES = ['🏻', '🏼', '🏽', '🏾', '🏿'];
+
+        const CHAR_SETS = {
+            'Arabic': ' غظضذخثتشرقصفعسنملكيطحzوهدجبأ',
+            'Arrows': ' ↑↗→↘↓↙←↖',
+            'Binary': ' 01',
+            'Blocks A': ' ▂▃▄▅▆▇█',
+            'Blocks B': ' ▏▎▍▌▋▊▉█',
+            'Brackets': ' []{}()<>',
+            'Braille': ' ⠁⠂⠃⠄⠅⠆⠇⠈⠉⠊⠋⠌⠍⠎⠏',
+            'Chess': ' ♔♕♖♗♘♙',
+            'Circles': ' .oO0',
+            'Currency': ' $€£¥₿',
+            'Cyrillic': ' ░абвгдежзийклмнопрстуфхцчшщъыьэюя',
+            'Density A': ' .`^",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$',
+            'Density B': ' ░▒▓█',
+            'Full Emojis': 'WAITING_FOR_INIT', 
+            'Glitch A': ' ¡¢£¤¥¦§¨©ª',
+            'Glitch B': ' ˜˚˛˝˙ˆˇ˘',
+            'Grid': ' ┼├┤┴┬',
+            'Hex': ' 0123456789ABCDEF',
+            'Katakana': ' アイウエオカキクケコサシスセソタチツテト',
+            'Lines H': ' _-¯',
+            'Lines V': ' |¦',
+            'Math': ' +-=*÷×√',
+            'Matrix': ' ｦｧｨｩｪｫｬｭｮｯｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ',
+            'Musical': ' ♩♪♫♬♭♮♯',
+            'Pixel': ' ▪️▫️◼️◻️',
+            'Runes': ' ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ',
+            'Shade': ' ░▒▓',
+            'Simple': ' .:-=+*#%@',
+            'Slashes': ' /\\|',
+            'Stars': ' ✦★☆✪',
+            'Triangles': ' ▲▼◄►'
+        };
+
+        const BASE_PALETTES = {
+            'B&W Threshold': (r,g,b,avg) => avg > 127 ? '#fff' : '#000',
+            'Blueprint': (r,g,b,avg) => `rgb(0, ${Math.floor(avg/2)}, ${avg})`,
+            'Candy': (r,g,b,avg) => `rgb(255, ${avg}, ${255-avg})`,
+            'Cyberpunk': (r,g,b,avg) => avg > 100 ? '#0ff' : '#f0f',
+            'Forest': (r,g,b,avg) => `rgb(0, ${avg}, 0)`,
+            'Gameboy': (r,g,b,avg) => avg < 64 ? '#0f380f' : avg < 128 ? '#306230' : avg < 192 ? '#8bac0f' : '#9bbc0f',
+            'Gold': (r,g,b,avg) => `rgb(${avg}, ${avg*0.84}, 0)`,
+            'Grayscale': (r,g,b,avg) => `rgb(${avg},${avg},${avg})`,
+            'Hotline': (r,g,b,avg) => avg > 128 ? '#ff0055' : '#00ffff',
+            'Invert': (r,g,b,avg) => `rgb(${255-r},${255-g},${255-b})`,
+            'Matrix': (r,g,b,avg) => `rgb(0, ${avg}, 0)`,
+            'Mint': (r,g,b,avg) => `rgb(${avg*0.5}, ${avg}, ${avg*0.8})`,
+            'Neon Night': (r,g,b,avg) => avg > 128 ? '#f0f' : '#00f',
+            'Noir': (r,g,b,avg) => avg > 100 ? '#ddd' : '#111',
+            'Ocean': (r,g,b,avg) => `rgb(0, ${avg*0.5}, ${avg})`,
+            'Radioactive': (r,g,b,avg) => `rgb(${avg*0.5}, ${avg}, 0)`,
+            'Red Alert': (r,g,b,avg) => `rgb(${avg}, 0, 0)`,
+            'Rust': (r,g,b,avg) => `rgb(${avg}, ${avg*0.4}, 0)`,
+            'Sepia': (r,g,b,avg) => `rgb(${Math.min(255, r*0.393+g*0.769+b*0.189)}, ${Math.min(255, r*0.349+g*0.686+b*0.168)}, ${Math.min(255, r*0.272+g*0.534+b*0.131)})`,
+            'Slate': (r,g,b,avg) => `rgb(${avg}, ${avg}, ${avg+20})`,
+            'Standard': (r,g,b,avg) => `rgb(${r},${g},${b})`,
+            'Thermal': (r,g,b,avg) => `hsl(${240 - (avg/255)*240}, 100%, 50%)`,
+            'Vaporwave': (r,g,b,avg) => `rgb(${avg}, ${255-avg}, 255)`,
+            'Violet': (r,g,b,avg) => `rgb(${avg}, 0, ${avg})`,
+            'Warmth': (r,g,b,avg) => `rgb(${avg+20}, ${avg}, ${avg-20})`,
+        };
+
+        const HUES = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
+        HUES.forEach(hue => {
+            BASE_PALETTES[`Mono ${hue}°`] = (r,g,b,avg) => `hsl(${hue}, 100%, ${avg/2.55}%)`;
+            BASE_PALETTES[`Neon ${hue}°`] = (r,g,b,avg) => avg > 128 ? `hsl(${hue}, 100%, 50%)` : '#050505';
+        });
+
+        const CONFIG = {
+            aspectRatio: { type: 'select', val: 'Screen (Fill)', options: ['Screen (Fill)', '16:9', '9:16', '1:1', '4:3', '21:9'], name: 'Output Ratio', category: 'Composition' },
+            zoom: { type: 'range', val: 1.0, min: 1.0, max: 4.0, step: 0.1, name: 'Zoom', category: 'Composition' },
+            resolution: { type: 'range', val: 100, min: 40, max: 300, name: 'Density', category: 'Composition' },
+            charSet: { type: 'select', val: 'Simple', options: [], name: 'Character Set', category: 'Style' },
+            fontSizeMod: { type: 'range', val: 1.0, min: 0.5, max: 2.0, step: 0.1, name: 'Font Scale', category: 'Style' },
+            colorMode: { type: 'select', val: 'Standard', options: [], name: 'Palette', category: 'Color' },
+            brightness: { type: 'range', val: 1.0, min: 0.2, max: 3.0, step: 0.1, name: 'Brightness', category: 'Color' },
+            contrast: { type: 'range', val: 1.0, min: 0.5, max: 3.0, step: 0.1, name: 'Contrast', category: 'Color' },
+            bgColor: { type: 'color', val: '#000000', name: 'Background', category: 'Color' },
+            autoAdvance: { type: 'bool', val: false, name: 'Auto Random', category: 'System' },
+            advanceTime: { type: 'range', val: 5, min: 2, max: 20, step: 1, name: 'Interval (s)', category: 'System' }
+        };
+
+        class ASCIIRenderer {
+            constructor() {
+                this.canvas = document.getElementById('mainCanvas');
+                this.ctx = this.canvas.getContext('2d', { alpha: false });
+                this.video = document.getElementById('sourceVideo');
+                this.bufferCanvas = document.createElement('canvas');
+                this.bufferCtx = this.bufferCanvas.getContext('2d', { willReadFrequently: true });
+                this.width = 0; this.height = 0;
+                this.cols = 0; this.rows = 0;
+                this.panX = 0.5; this.panY = 0.5;
+                this.isDragging = false;
+                this.hasDragged = false;
+                this.lastMouseX = 0; this.lastMouseY = 0;
+                this.time = 0;
+                this.useVideo = false;
+                this.webcamStream = null;
+                this.sortedEmojis = []; 
+                this.initInteraction();
+                this.initResize();
+                this.precalcEmojis(); 
+            }
+
+            async precalcEmojis() {
+                const ind = document.getElementById('procIndicator');
+                const txt = document.getElementById('procText');
+                ind.classList.remove('hidden');
+                await new Promise(r => setTimeout(r, 100));
+                const size = 16;
+                const canvas = document.createElement('canvas');
+                canvas.width = size; canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                ctx.font = `${size}px sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                let fullPalette = [...RAW_EMOJI_BASE];
+                SKINNABLE_BASES.forEach(base => {
+                    if (!fullPalette.includes(base)) fullPalette.push(base);
+                    SKIN_TONES.forEach(tone => fullPalette.push(base + tone));
+                });
+                const scored = [];
+                const total = fullPalette.length;
+                const chunkSize = 200;
+                for (let i = 0; i < total; i += chunkSize) {
+                    const chunk = fullPalette.slice(i, i + chunkSize);
+                    chunk.forEach(char => {
+                        ctx.clearRect(0,0,size,size);
+                        ctx.fillStyle = '#fff';
+                        ctx.fillText(char, size/2, size/2);
+                        const data = ctx.getImageData(0,0,size,size).data;
+                        let bright = 0, count = 0;
+                        for(let k=0; k<data.length; k+=4) {
+                            if(data[k+3] > 0) {
+                                bright += (data[k] + data[k+1] + data[k+2]) / 3;
+                                count++;
+                            }
+                        }
+                        const avg = count > 0 ? bright/count : 0;
+                        scored.push({ char, val: avg });
+                    });
+                    txt.innerText = `Loading ${Math.round((i/total)*100)}%`;
+                    await new Promise(r => setTimeout(r, 0));
+                }
+                scored.sort((a,b) => a.val - b.val);
+                this.sortedEmojis = scored.map(s => s.char);
+                CHAR_SETS['Full Emojis'] = this.sortedEmojis.join('');
+                ind.classList.add('hidden');
+            }
+
+            initInteraction() {
+                const start = (x, y) => { this.isDragging=true; this.hasDragged=false; this.lastMouseX=x; this.lastMouseY=y; };
+                const move = (x, y) => {
+                    if(!this.isDragging) return;
+                    const dx = x - this.lastMouseX; const dy = y - this.lastMouseY;
+                    if(Math.abs(dx)>2 || Math.abs(dy)>2) this.hasDragged = true;
+                    this.lastMouseX=x; this.lastMouseY=y;
+                    const sensitivity = 1 / (Math.min(this.width, this.height) * CONFIG.zoom.val);
+                    this.panX -= dx * sensitivity;
+                    this.panY -= dy * sensitivity;
+                    this.panX = Math.max(0, Math.min(1, this.panX));
+                    this.panY = Math.max(0, Math.min(1, this.panY));
+                };
+                const end = () => this.isDragging = false;
+                this.canvas.addEventListener('mousedown', e => start(e.clientX, e.clientY));
+                window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+                window.addEventListener('mouseup', end);
+                this.canvas.addEventListener('touchstart', e => start(e.touches[0].clientX, e.touches[0].clientY));
+                window.addEventListener('touchmove', e => { if(e.target===this.canvas) e.preventDefault(); move(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+                window.addEventListener('touchend', end);
+            }
+
+            initResize() { window.addEventListener('resize', () => this.calcGrid()); this.calcGrid(); }
+
+            initAudio() {
+                if(this.audioCtx) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.audioCtx = new AudioContext();
+                this.audioDest = this.audioCtx.createMediaStreamDestination();
+                this.gainNode = this.audioCtx.createGain();
+                this.gainNode.connect(this.audioDest);
+                this.gainNode.connect(this.audioCtx.destination); 
+                if (!this.webcamStream) {
+                    this.audioSource = this.audioCtx.createMediaElementSource(this.video);
+                    this.audioSource.connect(this.gainNode);
+                }
+            }
+
+            async startWebcam() {
+                try {
+                    if(this.webcamStream) this.webcamStream.getTracks().forEach(t=>t.stop());
+                    const stream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
+                    this.webcamStream = stream;
+                    this.video.srcObject = stream;
+                    this.video.muted = true; 
+                    this.video.play();
+                    this.useVideo = true;
+                    this.calcGrid();
+                    if(typeof rec !== 'undefined') rec.updateStatus();
+                } catch(e) { alert("Webcam access denied"); }
+            }
+
+            calcGrid() {
+                const vw = window.innerWidth, vh = window.innerHeight;
+                const rMap = {'Screen (Fill)':0, '16:9':16/9, '9:16':9/16, '1:1':1, '4:3':4/3, '21:9':21/9};
+                let targetRatio = rMap[CONFIG.aspectRatio.val] || (vw / vh);
+                let finalW, finalH;
+                const screenRatio = vw / vh;
+                if (screenRatio > targetRatio) { finalH = vh; finalW = vh * targetRatio; }
+                else { finalW = vw; finalH = vw / targetRatio; }
+                const dpr = window.devicePixelRatio || 1;
+                this.canvas.style.width = `${finalW}px`; this.canvas.style.height = `${finalH}px`;
+                this.canvas.width = finalW * dpr; this.canvas.height = finalH * dpr;
+                this.ctx.scale(dpr, dpr);
+                this.width = finalW; this.height = finalH;
+                const res = CONFIG.resolution.val;
+                this.cols = res;
+                this.cellWidth = this.width / this.cols;
+                this.cellHeight = this.cellWidth * 1.6;
+                this.rows = Math.floor(this.height / this.cellHeight);
+                this.bufferCanvas.width = this.cols; this.bufferCanvas.height = this.rows;
+            }
+
+            render(dt) {
+                this.time += dt;
+                const bw = this.bufferCanvas.width, bh = this.bufferCanvas.height, tR = this.width / this.height;
+                if (this.useVideo && this.video.readyState >= 2) {
+                    const vw = this.video.videoWidth, vh = this.video.videoHeight, vRatio = vw/vh;
+                    let baseSW, baseSH;
+                    if (vRatio > tR) { baseSH = vh; baseSW = vh * tR; }
+                    else { baseSW = vw; baseSH = vw / tR; }
+                    const z = CONFIG.zoom.val;
+                    const zSW = baseSW / z, zSH = baseSH / z;
+                    const maxPanX = vw - zSW, maxPanY = vh - zSH;
+                    const sx = maxPanX * this.panX, sy = maxPanY * this.panY;
+                    this.bufferCtx.drawImage(this.video, sx, sy, zSW, zSH, 0, 0, bw, bh);
+                } else { this.generatePlasma(bw, bh); }
+                const imgData = this.bufferCtx.getImageData(0,0,this.cols,this.rows), data = imgData.data;
+                let chars = CHAR_SETS[CONFIG.charSet.val];
+                if(CONFIG.charSet.val === 'Full Emojis' && chars === 'WAITING_FOR_INIT') chars = CHAR_SETS['Simple'];
+                const len = chars.length, pFn = BASE_PALETTES[CONFIG.colorMode.val];
+                this.ctx.fillStyle = CONFIG.bgColor.val; this.ctx.fillRect(0,0,this.width,this.height);
+                const fs = Math.ceil(this.cellHeight * CONFIG.fontSizeMod.val);
+                this.ctx.font = `bold ${fs}px 'Space Mono', monospace`;
+                this.ctx.textBaseline = 'top'; this.ctx.textAlign = 'left';
+                for (let y=0; y<this.rows; y++) {
+                    for (let x=0; x<this.cols; x++) {
+                        const i = (y*this.cols+x)*4;
+                        let r = data[i], g = data[i+1], b = data[i+2];
+                        r = ((r/255-0.5)*CONFIG.contrast.val + 0.5)*255*CONFIG.brightness.val;
+                        g = ((g/255-0.5)*CONFIG.contrast.val + 0.5)*255*CONFIG.brightness.val;
+                        b = ((b/255-0.5)*CONFIG.contrast.val + 0.5)*255*CONFIG.brightness.val;
+                        r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b));
+                        const avg = (r+g+b)/3;
+                        let char;
+                        if(Array.isArray(this.sortedEmojis) && CONFIG.charSet.val === 'Full Emojis') {
+                             const idx = Math.floor((avg/255) * (this.sortedEmojis.length - 1));
+                             char = this.sortedEmojis[idx];
+                        } else {
+                             const idx = Math.floor((avg/255) * (len - 1));
+                             char = chars[idx];
+                        }
+                        this.ctx.fillStyle = pFn(r,g,b,avg);
+                        this.ctx.fillText(char, x*this.cellWidth, y*this.cellHeight);
+                    }
+                }
+            }
+
+            generatePlasma(w, h) {
+                const t = this.time * 0.001, z = CONFIG.zoom.val;
+                const cx = w*this.panX*z, cy = h*this.panY*z;
+                this.bufferCtx.fillStyle='#000'; this.bufferCtx.fillRect(0,0,w,h);
+                const g1 = this.bufferCtx.createRadialGradient(cx+Math.sin(t)*w/3, cy+Math.cos(t*1.2)*h/3, 0, cx+Math.sin(t)*w/3, cy+Math.cos(t*1.2)*h/3, w*z);
+                g1.addColorStop(0,'#f00'); g1.addColorStop(1,'transparent');
+                const g2 = this.bufferCtx.createRadialGradient(cx+Math.cos(t*0.8)*w/3, cy+Math.sin(t*0.5)*h/3, 0, cx+Math.cos(t*0.8)*w/3, cy+Math.sin(t*0.5)*h/3, w*0.8*z);
+                g2.addColorStop(0,'#0ff'); g2.addColorStop(1,'transparent');
+                this.bufferCtx.globalCompositeOperation = 'screen';
+                this.bufferCtx.fillStyle=g1; this.bufferCtx.fillRect(0,0,w,h);
+                this.bufferCtx.fillStyle=g2; this.bufferCtx.fillRect(0,0,w,h);
+                this.bufferCtx.globalCompositeOperation = 'source-over';
+            }
+
+            exportImage() {
+                const link = document.createElement('a');
+                link.download = `retro_render_${Date.now()}.png`;
+                link.href = this.canvas.toDataURL('image/png', 1.0);
+                link.click();
+            }
+        }
+
+        class RecorderManager {
+            constructor(renderer) {
+                this.renderer = renderer;
+                this.mediaRecorder = null;
+                this.chunks = [];
+                this.isRecording = false;
+                this.btn = document.getElementById('btnRecord');
+                this.indicator = document.getElementById('recIndicator');
+                this.btn.addEventListener('click', () => this.toggleRecording());
+                this.updateStatus();
+            }
+
+            // Method to toggle button disabled state based on active source
+            updateStatus() {
+                this.btn.disabled = !this.renderer.useVideo;
+            }
+
+            async toggleRecording() { if(this.isRecording) this.stop(); else await this.start(); }
+
+            async start() {
+                const ren = this.renderer;
+                const useWebcam = !!ren.webcamStream;
+                const hasFileAudio = ren.useVideo && !ren.video.muted;
+                const shouldRecordAudio = useWebcam || hasFileAudio;
+                if (shouldRecordAudio) {
+                    ren.initAudio();
+                    if(ren.audioCtx.state === 'suspended') await ren.audioCtx.resume();
+                    ren.gainNode.gain.setValueAtTime(0, ren.audioCtx.currentTime);
+                }
+                if (ren.useVideo && !useWebcam) {
+                    ren.video.pause(); ren.video.currentTime = 0;
+                    await new Promise(r => { if(ren.video.currentTime===0) r(); else ren.video.addEventListener('seeked', () => r(), {once:true}); });
+                    await ren.video.play();
+                }
+                if (shouldRecordAudio) ren.gainNode.gain.linearRampToValueAtTime(1, ren.audioCtx.currentTime + 0.2);
+                const cStream = ren.canvas.captureStream(30), stream = new MediaStream();
+                cStream.getVideoTracks().forEach(t => stream.addTrack(t));
+                if (shouldRecordAudio) {
+                    if (useWebcam) ren.webcamStream.getAudioTracks().forEach(t => stream.addTrack(t));
+                    else if (ren.audioDest) ren.audioDest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+                }
+                try {
+                    let mimeType = 'video/mp4';
+                    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp9';
+                    this.mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType, videoBitsPerSecond: 8000000 });
+                } catch(e) { this.mediaRecorder = new MediaRecorder(stream); }
+                this.chunks = [];
+                this.mediaRecorder.ondataavailable = e => { if(e.data.size>0) this.chunks.push(e.data); };
+                this.mediaRecorder.onstop = () => {
+                    const blob = new Blob(this.chunks, {type:this.mediaRecorder.mimeType}), url = URL.createObjectURL(blob), a = document.createElement('a');
+                    a.href = url; const ext = this.mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm';
+                    a.download = `retro_render_${Date.now()}.${ext}`; a.click(); URL.revokeObjectURL(url);
+                };
+                this.mediaRecorder.start();
+                this.isRecording = true;
+                this.indicator.classList.remove('hidden');
+                this.btn.innerHTML = '<i class="fa-solid fa-square"></i> Stop';
+            }
+
+            stop() {
+                if(this.mediaRecorder && this.isRecording) {
+                    if(this.renderer.gainNode) this.renderer.gainNode.gain.linearRampToValueAtTime(0, this.renderer.audioCtx.currentTime + 0.1);
+                    setTimeout(() => { this.mediaRecorder.stop(); this.isRecording = false; this.indicator.classList.add('hidden'); this.btn.innerHTML = '<i class="fa-solid fa-circle"></i> Rec'; }, 150);
+                }
+            }
+        }
+
+        class UIManager {
+            constructor(renderer) {
+                this.renderer = renderer;
+                this.panel = document.getElementById('settingsPanel');
+                this.isOpen = false;
+                this.autoAdvanceInterval = null;
+                this.buildControls();
+                this.attachEvents();
+                this.randomize();
+            }
+
+            buildControls() {
+                const container = document.getElementById('controlsContainer');
+                container.innerHTML = '';
+                CONFIG.charSet.options = Object.keys(CHAR_SETS).sort();
+                CONFIG.colorMode.options = Object.keys(BASE_PALETTES).sort();
+                const cats = {};
+                for (const [k, c] of Object.entries(CONFIG)) {
+                    if(!cats[c.category]) cats[c.category] = [];
+                    cats[c.category].push({key:k, ...c});
+                }
+                for (const [name, items] of Object.entries(cats)) {
+                    const sec = document.createElement('div'); sec.className = 'control-section';
+                    const tit = document.createElement('div'); tit.className = 'section-title'; tit.innerText = name;
+                    sec.appendChild(tit);
+                    items.forEach(c => {
+                        const row = document.createElement('div'); row.className = 'mb-3';
+                        const header = document.createElement('div'); header.className = 'flex justify-between items-center mb-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wide';
+                        if (c.type === 'select') { header.innerHTML = `<span>${c.name}</span>`; }
+                        else { header.innerHTML = `<span>${c.name}</span><span id="val-${c.key}" class="text-white font-mono opacity-80">${c.val}</span>`; }
+                        let input;
+                        if(c.type==='range') {
+                            input = document.createElement('input'); input.type='range'; input.min=c.min; input.max=c.max; input.step=c.step||1; input.value=c.val;
+                            input.addEventListener('input', e => {
+                                CONFIG[c.key].val = parseFloat(e.target.value);
+                                document.getElementById(`val-${c.key}`).innerText = CONFIG[c.key].val;
+                                if(['resolution','aspectRatio','zoom'].includes(c.key)) this.renderer.calcGrid();
+                                if(c.key==='advanceTime') this.handleAutoAdvance();
+                            });
+                        } else if (c.type==='select') {
+                            input = document.createElement('select'); input.className = 'w-full bg-black/20 border border-white/10 rounded px-2 py-2 text-xs text-white focus:outline-none focus:border-blue-500 mt-1';
+                            c.options.forEach(o => { const op = document.createElement('option'); op.value=o; op.innerText=o; if(o===c.val) op.selected=true; input.appendChild(op); });
+                            input.addEventListener('change', e => { CONFIG[c.key].val = e.target.value; if(c.key==='aspectRatio') this.renderer.calcGrid(); });
+                        } else if (c.type==='color') {
+                            input = document.createElement('input'); input.type='color'; input.value=c.val; input.className='w-full h-8 bg-transparent cursor-pointer rounded mt-1 border border-white/10';
+                            input.addEventListener('input', e => { CONFIG[c.key].val = e.target.value; });
+                        } else if (c.type==='bool') {
+                            const wrap = document.createElement('div'); wrap.className = 'relative inline-block w-10 align-middle select-none transition duration-200 ease-in ml-auto';
+                            input = document.createElement('input'); input.type='checkbox'; input.className='toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300';
+                            input.checked=c.val; const bg = document.createElement('label'); bg.className='toggle-label block overflow-hidden h-5 rounded-full bg-zinc-700 cursor-pointer';
+                            wrap.appendChild(input); wrap.appendChild(bg);
+                            input.addEventListener('change', e => { CONFIG[c.key].val = e.target.checked; document.getElementById(`val-${c.key}`).innerText = e.target.checked?'ON':'OFF'; this.handleAutoAdvance(); });
+                            header.innerHTML = `<span>${c.name}</span>`; header.className = 'flex justify-between items-center text-[10px] font-bold text-zinc-400 uppercase tracking-wide h-8';
+                            header.appendChild(wrap); row.appendChild(header); sec.appendChild(row); return;
+                        }
+                        row.appendChild(header); row.appendChild(input); sec.appendChild(row);
+                    });
+                    container.appendChild(sec);
+                }
+            }
+
+            attachEvents() {
+                const mb = document.getElementById('menuBtn'), cb = document.getElementById('closeBtn'), panel = document.getElementById('settingsPanel');
+                const toggle = () => { this.isOpen = !this.isOpen; panel.classList.toggle('translate-x-full', !this.isOpen); };
+                mb.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+                cb.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+                document.addEventListener('click', e => {
+                    if(this.isOpen && !panel.contains(e.target) && !mb.contains(e.target)) toggle();
+                    if((e.target.tagName==='CANVAS'||e.target.tagName==='BODY') && !this.renderer.hasDragged) this.randomizeTrans();
+                });
+                document.getElementById('btnRandom').addEventListener('click', () => this.randomizeTrans());
+                document.getElementById('btnReset').addEventListener('click', () => this.reset());
+                document.getElementById('btnExportImg').addEventListener('click', () => this.renderer.exportImage());
+                document.getElementById('btnWebcam').addEventListener('click', () => this.renderer.startWebcam());
+                const upBtn = document.getElementById('btnUpload'), fileIn = document.getElementById('videoUpload');
+                upBtn.addEventListener('click', () => fileIn.click());
+                fileIn.addEventListener('change', e => this.handleFile(e.target.files[0]));
+                document.body.addEventListener('dragover', e => e.preventDefault());
+                document.body.addEventListener('drop', e => { e.preventDefault(); this.handleFile(e.dataTransfer.files[0]); });
+            }
+            
+            handleFile(file) {
+                if(!file) return;
+                const url = URL.createObjectURL(file);
+                this.renderer.video.src = url;
+                if(this.renderer.webcamStream) { this.renderer.webcamStream.getTracks().forEach(t=>t.stop()); this.renderer.webcamStream=null; }
+                this.renderer.video.srcObject = null; this.renderer.video.play(); this.renderer.video.muted = false; this.renderer.video.volume = 1.0;
+                this.renderer.useVideo = true; this.renderer.panX = 0.5; this.renderer.panY = 0.5;
+                this.renderer.calcGrid();
+                if(typeof rec !== 'undefined') rec.updateStatus();
+            }
+
+            handleAutoAdvance() {
+                if(this.autoAdvanceInterval) clearInterval(this.autoAdvanceInterval);
+                if(CONFIG.autoAdvance.val) this.autoAdvanceInterval = setInterval(() => this.randomizeTrans(), CONFIG.advanceTime.val*1000);
+            }
+
+            randomizeTrans() {
+                const cvs = document.getElementById('mainCanvas'); cvs.style.opacity = '0';
+                setTimeout(() => { this.randomize(); cvs.style.opacity = '1'; }, 300);
+            }
+
+            randomize() {
+                CONFIG.resolution.val = Math.floor(Math.random()*150 + 50);
+                const keysC = Object.keys(CHAR_SETS); CONFIG.charSet.val = keysC[Math.floor(Math.random()*keysC.length)];
+                const keysP = Object.keys(BASE_PALETTES); CONFIG.colorMode.val = keysP[Math.floor(Math.random()*keysP.length)];
+                CONFIG.brightness.val = parseFloat((Math.random()*1.5 + 0.5).toFixed(1));
+                CONFIG.contrast.val = parseFloat((Math.random()*1.5 + 0.8).toFixed(1));
+                const r = Math.floor(Math.random()*30), g = Math.floor(Math.random()*30), b = Math.floor(Math.random()*30);
+                CONFIG.bgColor.val = `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+                this.renderer.calcGrid(); this.buildControls();
+            }
+
+            reset() {
+                CONFIG.resolution.val=100; CONFIG.charSet.val='Simple'; CONFIG.colorMode.val='Standard';
+                CONFIG.brightness.val=1.0; CONFIG.contrast.val=1.0; CONFIG.bgColor.val='#000000';
+                CONFIG.fontSizeMod.val=1.0; CONFIG.aspectRatio.val='Screen (Fill)'; CONFIG.zoom.val=1.0;
+                this.renderer.panX=0.5; this.renderer.panY=0.5; this.renderer.useVideo=false;
+                if(this.renderer.webcamStream) { this.renderer.webcamStream.getTracks().forEach(t=>t.stop()); this.renderer.webcamStream=null; }
+                this.renderer.calcGrid(); this.buildControls();
+                if(typeof rec !== 'undefined') rec.updateStatus();
+            }
+        }
+
+        const renderer = new ASCIIRenderer();
+        const ui = new UIManager(renderer);
+        const rec = new RecorderManager(renderer);
+
+        let lastT = 0;
+        function animate(t) { renderer.render(t - lastT); lastT = t; requestAnimationFrame(animate); }
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
